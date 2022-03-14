@@ -10,15 +10,15 @@
     "start": "remix-serve build"
   },
   "dependencies": {
-    "@remix-run/react": "0.0.0-experimental-c982922c",
-    "@remix-run/serve": "0.0.0-experimental-c982922c",
+    "@remix-run/react": "0.0.0-experimental-7b47e562",
+    "@remix-run/serve": "0.0.0-experimental-7b47e562",
     "collected-notes": "^2.3.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "remix": "0.0.0-experimental-c982922c"
+    "remix": "0.0.0-experimental-7b47e562"
   },
   "devDependencies": {
-    "@remix-run/dev": "0.0.0-experimental-c982922c",
+    "@remix-run/dev": "0.0.0-experimental-7b47e562",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "typescript": "^4.5.4"
