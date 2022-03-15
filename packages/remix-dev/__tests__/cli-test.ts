@@ -225,7 +225,7 @@ describe("remix cli", () => {
       expect(fs.existsSync(path.join(projectDir, "app/root.jsx"))).toBeTruthy();
     });
 
-    it("works for a file URL to a tarball on disk", async () => {
+    it("works for a file URL to a tarball on disk and converts it to javascript", async () => {
       let projectDir = getProjectDir("file-url-tarball");
       let { stdout } = await execFile("node", [
         remix,
@@ -236,12 +236,23 @@ describe("remix cli", () => {
           path.join(__dirname, "fixtures", "arc.tar.gz")
         ).toString(),
         "--no-install",
+        "--no-typescript",
       ]);
       expect(stdout.trim()).toBe(
         `💿 That's it! \`cd\` into "${projectDir}" and check the README for development and deploy instructions!`
       );
       expect(fs.existsSync(path.join(projectDir, "package.json"))).toBeTruthy();
       expect(fs.existsSync(path.join(projectDir, "app/root.jsx"))).toBeTruthy();
+      expect(fs.existsSync(path.join(projectDir, "app/root.tsx"))).toBeFalsy();
+      expect(
+        fs.existsSync(path.join(projectDir, "jsconfig.json"))
+      ).toBeTruthy();
+      expect(fs.existsSync(path.join(projectDir, "tsconfig.json"))).toBeFalsy();
+      let pkgJSON = JSON.parse(
+        fs.readFileSync(path.join(projectDir, "package.json"), "utf8")
+      );
+      expect(pkgJSON.scripts.typecheck).toBeUndefined();
+      expect(pkgJSON.devDependencies).not.toContain("typescript");
     });
 
     it("works for a file path to a directory on disk", async () => {
@@ -368,7 +379,7 @@ describe("remix cli", () => {
         })
       ).rejects.toThrowError(`🚨 Oops, remix.init failed`);
       expect(fs.existsSync(path.join(projectDir, "package.json"))).toBeTruthy();
-      expect(fs.existsSync(path.join(projectDir, "app/root.tsx"))).toBeTruthy();
+      expect(fs.existsSync(path.join(projectDir, "app/root.jsx"))).toBeTruthy();
       // we should keep remix.init around if the init script fails
       expect(fs.existsSync(path.join(projectDir, "remix.init"))).toBeTruthy();
       // deps can take a bit to install
