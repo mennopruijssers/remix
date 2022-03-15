@@ -16,6 +16,9 @@
     "remix": "cli.js"
   },
   "dependencies": {
+    "@babel/core": "^7.17.5",
+    "@babel/plugin-syntax-jsx": "^7.16.7",
+    "@babel/preset-typescript": "^7.16.7",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
     "@remix-run/server-runtime": "1.2.3",
     "cacache": "^15.0.5",
@@ -24,6 +27,7 @@
     "dotenv": "^16.0.0",
     "esbuild": "0.14.22",
     "exit-hook": "2.2.1",
+    "fast-glob": "^3.2.11",
     "fs-extra": "^10.0.0",
     "get-port": "^5.1.1",
     "gunzip-maybe": "^1.4.2",
@@ -32,6 +36,7 @@
     "meow": "^7.1.1",
     "minimatch": "^3.0.4",
     "node-fetch": "^2.6.7",
+    "prettier": "^2.5.1",
     "pretty-ms": "^7.0.1",
     "read-package-json-fast": "^2.0.2",
     "remark-frontmatter": "^4.0.0",

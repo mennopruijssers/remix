@@ -1,14 +1,17 @@
 import stream from "stream";
 import { promisify } from "util";
+import { fileURLToPath } from "url";
+import { execSync } from "child_process";
 import path from "path";
 import fse from "fs-extra";
 import fetch from "node-fetch";
 import gunzip from "gunzip-maybe";
 import tar from "tar-fs";
 import * as semver from "semver";
-import { fileURLToPath } from "url";
-import { execSync } from "child_process";
 import sortPackageJSON from "sort-package-json";
+import glob from "fast-glob";
+import babel from "@babel/core";
+import prettier from "prettier";
 
 import packageJson from "./package.json";
 
@@ -139,11 +142,7 @@ export async function createApp({
   });
 
   if (!useTypeScript) {
-    // TODO:
-    // 1. Convert all .ts files in the template to .js
-    // 2. Rename the tsconfig.json to jsconfig.json
-    // 3. Remove @types/* and typescript from package.json
-    // 4. Remove typecheck npm script from package.json
+    deTypeScriptify(projectDir);
   }
 
   if (installDeps) {
@@ -420,4 +419,81 @@ async function detectTemplateType(
     return "repo";
   }
   return "remoteTarball";
+}
+
+function untype(filename: string, ts: string): string {
+  const result = babel.transformSync(ts, {
+    filename,
+    presets: [["@babel/preset-typescript", { jsx: "preserve" }]],
+    plugins: ["@babel/plugin-syntax-jsx"],
+    compact: false,
+    retainLines: true,
+  });
+
+  if (!result || !result.code) {
+    throw new Error("Could not parse typescript");
+  }
+
+  /*
+    Babel's `compact` and `retainLines` options are both bad at formatting code.
+    Use Prettier for nicer formatting.
+  */
+  return prettier.format(result.code, { parser: "babel-ts" });
+}
+
+async function deTypeScriptify(projectDir: string) {
+  // 1. Convert all .ts files in the template to .js
+  let entries = glob.sync("**/*.+(ts|tsx)", {
+    cwd: projectDir,
+    absolute: true,
+  });
+  for (let entry of entries) {
+    if (entry.endsWith(".d.ts")) {
+      fse.removeSync(entry);
+      continue;
+    }
+
+    let contents = fse.readFileSync(entry, "utf8");
+    let untyped = untype(entry, contents);
+    console.log({ [entry]: untyped });
+
+    fse.writeFileSync(entry, untyped, "utf8");
+    if (entry.endsWith(".tsx")) {
+      fse.renameSync(entry, entry.replace(/\.tsx?$/, ".jsx"));
+    } else {
+      fse.renameSync(entry, entry.replace(/\.ts?$/, ".js"));
+    }
+  }
+
+  // 2. Rename the tsconfig.json to jsconfig.json
+  if (fse.existsSync(path.join(projectDir, "tsconfig.json"))) {
+    fse.renameSync(
+      path.join(projectDir, "tsconfig.json"),
+      path.join(projectDir, "jsconfig.json")
+    );
+  }
+
+  // 3. Remove @types/* and typescript from package.json
+  let packageJson = path.join(projectDir, "package.json");
+  if (!fse.existsSync(packageJson)) {
+    throw new Error("Could not find package.json");
+  }
+  let pkg = JSON.parse(fse.readFileSync(packageJson, "utf8"));
+  let devDeps = pkg.devDependencies || {};
+  let newPackageJson = {
+    ...pkg,
+    devDependencies: Object.fromEntries(
+      Object.entries(devDeps).filter(([name]) => {
+        return !name.startsWith("@types/") || name !== "typescript";
+      })
+    ),
+  };
+  // 4. Remove typecheck npm script from package.json
+  if (pkg.scripts && pkg.scripts.typecheck) {
+    delete pkg.scripts.typecheck;
+  }
+  fse.writeJSONSync(path.join(projectDir, "package.json"), newPackageJson, {
+    spaces: 2,
+    replacer: null,
+  });
 }
