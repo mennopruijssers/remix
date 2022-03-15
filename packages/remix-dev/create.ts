@@ -455,9 +455,8 @@ async function deTypeScriptify(projectDir: string) {
 
     let contents = fse.readFileSync(entry, "utf8");
     let untyped = untype(entry, contents);
-    console.log({ [entry]: untyped });
 
-    fse.writeFileSync(entry, untyped, "utf8");
+    fse.writeFileSync(path.basename(entry), untyped, "utf8");
     if (entry.endsWith(".tsx")) {
       fse.renameSync(entry, entry.replace(/\.tsx?$/, ".jsx"));
     } else {
